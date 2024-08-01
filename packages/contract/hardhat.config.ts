@@ -1,8 +1,17 @@
-require("@nomicfoundation/hardhat-toolbox");
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
 
-/** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
-  solidity: "0.8.20",
-  // その他の設定...
+const config: HardhatUserConfig = {
+  solidity: {
+    version: "0.8.20",
+    settings: {
+      evmVersion: "shanghai",
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    },
+  }
 };
 
+export default config;
