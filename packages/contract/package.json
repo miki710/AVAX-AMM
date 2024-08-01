@@ -1,0 +1,38 @@
+{
+  "name": "contract",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
+    "@nomicfoundation/hardhat-toolbox": "4.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@typechain/ethers-v6": "^0.5.0",
+    "@typechain/hardhat": "^9.0.0",
+    "@types/chai": "^4.3.17",
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^22.0.2",
+    "chai": "^4.2.0",
+    "dotenv": "^16.0.2",
+    "ethers": "^6.9.0",
+    "hardhat": "2.17.0",
+    "hardhat-gas-reporter": "^1.0.8",
+    "solidity-coverage": "^0.8.1",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.0",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "5.0.0"
+  },
+  "scripts": {
+    "deploy": "npx hardhat run scripts/deploy.ts --network fuji",
+    "cp": "yarn cp:typechain && yarn cp:artifact",
+    "cp:typechain": "cp -r typechain-types ../client/",
+    "cp:artifact": "cp artifacts/contracts/ERC20Tokens.sol/USDCToken.json artifacts/contracts/ERC20Tokens.sol/JOEToken.json artifacts/contracts/AMM.sol/AMM.json ../client/utils/",
+    "test": "npx hardhat test"
+  }
+}

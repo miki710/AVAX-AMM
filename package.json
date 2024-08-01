@@ -1,0 +1,19 @@
+{
+  "name": "avax-amm",
+  "version": "1.0.0",
+  "description": "AMM dApp",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
+  },
+  "scripts": {
+    "contract": "yarn workspace contract",
+    "client": "yarn workspace client",
+    "test": "yarn contract test"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}
