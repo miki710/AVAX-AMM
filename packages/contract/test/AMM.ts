@@ -93,6 +93,9 @@ describe("AMM", function () {
     getEquivalentToken(token: string, amount: bigint): Promise<bigint>;
     getWithdrawEstimate(token: string, share: bigint): Promise<bigint>;
     withdraw(share: bigint): Promise<ContractTransaction>;
+    getSwapEstimateOut(inToken: string, amountIn: bigint): Promise<bigint>;
+    getSwapEstimateIn(outToken: string, amountOut: bigint): Promise<bigint>;
+    swap(inToken: string, outToken: string, amountIn: bigint): Promise<bigint>;
   }
 
   async function deployContractWithLiquidity() {
@@ -286,6 +289,128 @@ describe("AMM", function () {
       );
       expect(await amm.totalAmount(await token1.getAddress())).to.equal(
         amountOwnerProvided1
+      );
+    });
+  });
+
+  describe("getSwapEstimateOut", function () {
+    it("Should get the right number of token", async function () {
+      const { amm, token0, token1 } = await loadFixture(
+        deployContractWithLiquidity
+      );
+  
+      const totalToken0 = await amm.totalAmount(await token0.getAddress());
+      const totalToken1 = await amm.totalAmount(await token1.getAddress());
+  
+      const amountInToken0 = ethers.parseEther("10");
+      // basic formula: k = x * y
+      // fee = 0.3%
+      const amountInToken0WithFee = amountInToken0 * 997n;
+      const amountReceiveToken1 = (amountInToken0WithFee * totalToken1)/(totalToken0 * 1000n + amountInToken0WithFee);
+  
+      expect(await amm.getSwapEstimateOut(await token0.getAddress(), amountInToken0)).to.eql(
+        amountReceiveToken1
+      );
+    });
+  });
+  
+  describe("getSwapEstimateIn", function () {
+    it("Should get the right number of token", async function () {
+      const { amm, token0, token1 } = await loadFixture(
+        deployContractWithLiquidity
+      );
+  
+      const totalToken0 = await amm.totalAmount(await token0.getAddress());
+      const totalToken1 = await amm.totalAmount(await token1.getAddress());
+  
+      const amountOutToken1 = ethers.parseEther("10");
+      // basic formula: k = x * y
+      // fee = 0.3%
+      const numerator = BigInt(totalToken0) * BigInt(amountOutToken1) * 1000n;
+        const denominator = 997n * (BigInt(totalToken1) - BigInt(amountOutToken1));
+        const amountInToken0 = numerator / denominator;
+  
+      expect(await amm.getSwapEstimateIn(await token1.getAddress(), amountOutToken1)).to.be.closeTo(
+        amountInToken0,
+        ethers.parseEther("0.1") // より大きな許容誤差
+      );
+    });
+  
+    it("Should revert if the amount of out token exceed the total", async function () {
+      const { amm, token1, amountOwnerProvided1, amountOtherProvided1 } =
+        await loadFixture(deployContractWithLiquidity);
+  
+      const amountSendToken1 = amountOwnerProvided1 + amountOtherProvided1 + 1n;
+  
+      await expect(
+        amm.getSwapEstimateIn(await token1.getAddress(), amountSendToken1)
+      ).to.be.revertedWith("Insufficient pool balance");
+    });
+  });
+
+  describe("swap", function () {
+    it("Should set the right number of amm details", async function () {
+      const {
+        amm,
+        token0,
+        amountOwnerProvided0,
+        amountOtherProvided0,
+        token1,
+        amountOwnerProvided1,
+        amountOtherProvided1,
+      } = await loadFixture(deployContractWithLiquidity);
+  
+      const amountSendToken0 = ethers.parseEther("10");
+      const amountReceiveToken1 = await amm.getSwapEstimateOut(
+        await token0.getAddress(),
+        amountSendToken0
+      );
+  
+      await token0.approve(await amm.getAddress(), amountSendToken0);
+      await amm.swap(await token0.getAddress(), await token1.getAddress(), amountSendToken0);
+  
+      expect(await amm.totalAmount(await token0.getAddress())).to.equal(
+        amountOwnerProvided0 + amountOtherProvided0 + amountSendToken0
+      );
+      expect(await amm.totalAmount(await token1.getAddress())).to.equal(
+        amountOwnerProvided1 + amountOtherProvided1 - amountReceiveToken1
+      );
+    });
+  
+    it("Token should be moved", async function () {
+      const { amm, token0, token1, owner } = await loadFixture(
+        deployContractWithLiquidity
+      );
+  
+      const ownerBalance0Before = await token0.balanceOf(owner.address);
+      const ownerBalance1Before = await token1.balanceOf(owner.address);
+  
+      const ammBalance0Before = await token0.balanceOf(await amm.getAddress());
+      const ammBalance1Before = await token1.balanceOf(await amm.getAddress());
+  
+      const amountSendToken0 = ethers.parseEther("10");
+      const amountReceiveToken1 = await amm.getSwapEstimateOut(
+        await token0.getAddress(),
+        amountSendToken0
+      );
+  
+      await token0.approve(await amm.getAddress(), amountSendToken0);
+      await amm.swap(await token0.getAddress(), await token1.getAddress(), amountSendToken0);
+  
+      expect(await token0.balanceOf(owner.address)).to.eql(
+        ownerBalance0Before - amountSendToken0
+      );
+      expect(await token1.balanceOf(owner.address)).to.eql(
+        ownerBalance1Before + amountReceiveToken1
+      );
+
+      const ammAddress = await amm.getAddress();
+  
+      expect(await token0.balanceOf(ammAddress)).to.eql(
+        ammBalance0Before + amountSendToken0
+      );
+      expect(await token1.balanceOf(ammAddress)).to.eql(
+        ammBalance1Before - amountReceiveToken1
       );
     });
   });
