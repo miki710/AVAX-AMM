@@ -11,6 +11,7 @@
   "scripts": {
     "contract": "yarn workspace contract",
     "client": "yarn workspace client",
+    "client:dev": "yarn workspace client dev",
     "test": "yarn contract test"
   },
   "devDependencies": {
