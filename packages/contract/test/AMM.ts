@@ -12,7 +12,7 @@ describe("AMM", function () {
     const USDCToken = await ethers.getContractFactory("USDCToken");
     const usdc = await USDCToken.deploy();
     await usdc.waitForDeployment(); // 新しい待機方法
-    const usdcAddress = await usdc.getAddress();
+    const usdcAddress = await usdc.getAddress();  // Ethers.js v6では、getAddress()メソッドを使用してコントラクトアドレスを取得します
     console.log("USDC address:", usdcAddress);
     
     await usdc.faucet(otherAccount.address, amountForOther);
@@ -68,6 +68,8 @@ describe("AMM", function () {
         amountProvide1
       );
 
+      // Ethers.js v6では、BigNumber.add()などのメソッドの代わりに
+      // 直接的な算術演算子（+, -, *, /）を使用します
       expect(await token0.balanceOf(owner.address)).to.equal(
         ownerBalance0Before - amountProvide0
       );
@@ -135,6 +137,9 @@ describe("AMM", function () {
   
     await token0WithApprove.connect(otherAccount).approve(await amm.getAddress(), amountOtherProvided0);
     await token1WithApprove.connect(otherAccount).approve(await amm.getAddress(), amountOtherProvided1);
+
+    // 型チェックエラーを解消するために、二重キャストを使用しています
+    // まず `unknown` にキャストし、その後 `AMM` インターフェースにキャストします
     await (amm.connect(otherAccount) as unknown as AMM)
       .provide(
         await token0.getAddress(),
